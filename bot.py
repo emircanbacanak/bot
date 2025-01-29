@@ -40,7 +40,7 @@ chrome_options.add_argument("--profile-directory=Default")
 service = Service(ChromeDriverManager().install())
 driver = webdriver.Chrome(service=service, options=chrome_options)
 
-wait = WebDriverWait(driver, 30)
+wait = WebDriverWait(driver, 10)
 
 def kullanici_verisini_isle(kullanici_verisi):
     try:
@@ -103,20 +103,14 @@ def kullanici_verisini_isle(kullanici_verisi):
         driver.execute_script("arguments[0].click();", onay_checkbox)
         time.sleep(5)
 
-        # Form gönderme
         try:
             gonder_butonu = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Senden']")))
             driver.execute_script("arguments[0].click();", gonder_butonu)
             print("Gönder butonuna başarıyla tıklandı.")
-            
-            # İlk tıklama sonrası 45 saniye bekle
             time.sleep(70)
-            
-            # Tekrar gönder butonuna tıklama
+
             driver.execute_script("arguments[0].click();", gonder_butonu)
             print("Gönder butonuna ikinci kez başarıyla tıklandı.")
-            
-            # Sayfayı görmek için 10 saniye bekle
             time.sleep(10)
 
         except Exception as e:
@@ -126,29 +120,29 @@ def kullanici_verisini_isle(kullanici_verisi):
         print(f"Bir hata oluştu: {e}")
         return False
 
-# CSV dosyasını okuma
 csv_dosyasi = "google_sheets_data_filtered.csv"
 veri = pd.read_csv(csv_dosyasi)
 veri["H"] = veri["H"].astype(str)
 excel_veri["H"] = excel_veri["H"].astype(str) 
 
-# 'H' sütununda 'tamamlandı' olmayan kullanıcıları işle
 for index, satir in veri.iterrows():
     if satir["H"] != "tamamlandı": 
         kullanici_verisi = satir.to_dict()
         basarili = kullanici_verisini_isle(kullanici_verisi)
-        basarili = True
+        basarili= True
         if basarili:
-            veri.at[index, "H"] = "tamamlandı"  # CSV'deki 'H' sütununu güncelle
-            # Aynı zamanda Excel dosyasındaki veriyi güncelle
-            excel_veri.at[index, "H"] = "tamamlandı"  # Excel dosyasındaki 'H' sütununu güncelle
+            veri.at[index, "H"] = "tamamlandı" 
+            excel_veri.at[index, "H"] = "tamamlandı" 
+            try:
+                veri.to_csv(csv_dosyasi, index=False)  
+                excel_veri.to_excel(excel_dosyasi, index=False)
+                print(f"Veriler başarıyla kaydedildi. Kullanıcı: {satir['Vollstandiger_name']}")
+            except Exception as e:
+                print(f"Dosyalar kaydedilirken bir hata oluştu: {e}")
         else:
             print(f"İşlem başarısız: {satir['Vollstandiger_name']}")
 
-# CSV dosyasını tekrar kaydetme
-veri.to_csv(csv_dosyasi, index=False)
-# Excel dosyasını tekrar kaydetme
+veri.to_csv(csv_dosyasi, index=False)  
 excel_veri.to_excel(excel_dosyasi, index=False)
-
 print("Tüm kullanıcılar işlendi. Uygulama kapatılıyor...")
 driver.quit()
